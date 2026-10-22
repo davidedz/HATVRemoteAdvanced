@@ -1,0 +1,9 @@
+DOMAIN = "advanced_tv_remote"
+CONF_URL = "url"
+CONF_UPDATE_INTERVAL = "update_interval"
+CONF_CACHE_HOURS = "cache_hours"
+DEFAULT_UPDATE_INTERVAL = 360
+DEFAULT_CACHE_HOURS = 24
+WS_CHANNELS = "advanced_tv_remote/channels"
+WS_PROGRAMS = "advanced_tv_remote/programs"
+
