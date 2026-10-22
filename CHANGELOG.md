@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.2
+
+- Ripristinati i selettori nativi di Home Assistant tramite ha-form: Home Assistant carica i componenti corretti del menu, senza elementi mwc-list-item incompatibili.
+- Aggiunto nell’editor il nome personalizzato per ogni canale, usato nella card e nell’intestazione del pannello; il campo vuoto ripristina il nome del provider.
+- Ogni canale è configurabile in un pannello nativo richiudibile. I canali esistenti partono chiusi, i nuovi si aprono automaticamente.
+- Le azioni continuano a usare l’editor nativo di Home Assistant, caricato tramite il selettore ui_action.
+- Verificati i controlli reali della demo ufficiale HA con 500 canali, selezione, nomi, azioni e apertura/chiusura dei pannelli.
+
+
 ## 0.2.1
 
 - Corretto il menu di selezione dei canali nell'editor della card: le voci non si sovrappongono più.
