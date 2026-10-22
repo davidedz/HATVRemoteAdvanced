@@ -1,6 +1,6 @@
 # Advanced TV Remote
 
-Integrazione custom Home Assistant e Lovelace card installabile tramite HACS. Mostra programma corrente e successivo dei canali TV selezionati; ogni riga supporta le azioni standard Home Assistant su tap, pressione prolungata e doppio tap.
+Integrazione custom Home Assistant e Lovelace card installabile tramite HACS. Mostra logo, programma corrente con barra di avanzamento e programma successivo con orario di inizio in righe compatte di circa 58 px; ogni riga supporta le azioni standard Home Assistant su tap, pressione prolungata e doppio tap.
 
 ## Installazione
 
@@ -9,6 +9,12 @@ Integrazione custom Home Assistant e Lovelace card installabile tramite HACS. Mo
 3. Riavviare Home Assistant e aggiungere **Advanced TV Remote** da Impostazioni → Dispositivi e servizi.
 4. Inserire un URL XMLTV pubblico o privato, `.xml` o `.gz`.
 5. Aggiungere la card dall'editor visuale Lovelace.
+
+## Aspetto della card
+
+Il layout è compatto anche su mobile. Il logo identifica il canale; il nome rimane disponibile passando il puntatore e per i lettori di schermo. Se il logo manca o non si carica, viene mostrato il nome come alternativa. Per visualizzare sempre i nomi, attivare **Mostra nomi dei canali** nell’editor oppure impostare `show_channel_names: true` nel YAML.
+
+La barra indica la porzione trascorsa del programma corrente e si aggiorna ogni 15 secondi. La riga sotto mostra l’orario di inizio e il titolo del programma successivo. I dati EPG continuano a essere richiesti ogni minuto. Il titolo della card è facoltativo: senza `title` lo spazio è dedicato ai canali.
 
 ## Esempio YAML
 
@@ -43,6 +49,8 @@ Sono supportate le azioni moderne `perform-action` con `perform_action`, `data` 
 ## Sviluppo
 
 Da `frontend`: `npm install`, `npm run typecheck`, `npm run build`. Il backend richiede Python 3.12 e le dipendenze dell'ambiente di sviluppo Home Assistant.
+
+Il test del layout `node tests/test_card_layout.cjs` verifica compattezza, avanzamento, orari, loghi e larghezze ridotte. Richiede Playwright e Chromium; la variabile `EDITOR_SCREENSHOTS` permette di salvare anteprime con dati dimostrativi.
 
 Il test delle azioni `node tests/test_card_actions.cjs` usa chiamate HA simulate e non comanda dispositivi reali. Richiede Playwright e un browser Chromium installati.
 

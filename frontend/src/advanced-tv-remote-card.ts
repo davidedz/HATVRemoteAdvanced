@@ -13,14 +13,17 @@ export class AdvancedTvRemoteCard extends LitElement {
   @state() private channels:Channel[]=[];
   @state() private programmes:Record<string,{current:Programme|null;next:Programme|null}>={};
   @state() private sourceRequired=false;
+  @state() private now = Date.now();
+  @state() private failedIcons = new Set<string>();
+  private progressTimer?: number;
   private timer?: number;
   private holdTimer?: number;
   private press?: { index: number; pointerId: number; x: number; y: number };
   private suppressedClick?: number;
   private tapTimers = new Map<number, number>();
   setConfig(config:CardConfig){this.clearGestures();this.config={...config,channels:config.channels??[]};this.load();}
-  connectedCallback(){super.connectedCallback();this.timer=window.setInterval(()=>this.load(),60000);}
-  disconnectedCallback(){window.clearInterval(this.timer);this.clearGestures();super.disconnectedCallback();}
+  connectedCallback(){super.connectedCallback();this.now=Date.now();this.timer=window.setInterval(()=>this.load(),60000);this.progressTimer=window.setInterval(()=>{this.now=Date.now()},15000);}
+  disconnectedCallback(){window.clearInterval(this.timer);window.clearInterval(this.progressTimer);this.clearGestures();super.disconnectedCallback();}
   protected updated(changed:Map<PropertyKey,unknown>){if(changed.has("hass"))this.load()}
   private async load(){if(!this.hass||!this.config)return;let entryId=this.config.config_entry_id;if(!entryId){const sources=await this.hass.callWS<EpgSource[]>({type:"advanced_tv_remote/sources"});if(sources.length===1)entryId=sources[0].entry_id;else{this.sourceRequired=true;return}}this.sourceRequired=false;const [channels,programmes]=await Promise.all([this.hass.callWS<Channel[]>({type:"advanced_tv_remote/channels",config_entry_id:entryId}),this.hass.callWS<Record<string,{current:Programme|null;next:Programme|null}>>({type:"advanced_tv_remote/programs",config_entry_id:entryId,channel_ids:this.config.channels.map(c=>c.channel_id)})]);this.channels=channels;this.programmes=programmes;}
   private async action(index: number, kind: ChannelAction) {
@@ -97,15 +100,100 @@ export class AdvancedTvRemoteCard extends LitElement {
       void this.action(index, "tap");
     }, 300));
   }
-  render(){if(!this.config)return nothing;return html`<ha-card><h2>${this.config.title??"Guida TV"}</h2>${this.sourceRequired?html`<p class="warning">Seleziona una sorgente EPG nell'editor della card.</p>`:nothing}<div class="grid">${this.config.channels.map((item,i)=>{const channel=this.channels.find(c=>c.id===item.channel_id);const p=this.programmes[item.channel_id];return html`<button type="button"
-      @pointerdown=${(event: PointerEvent) => this.down(i, event)}
-      @pointerup=${(event: PointerEvent) => this.up(i, event)}
-      @pointermove=${(event: PointerEvent) => this.move(i, event)}
-      @pointercancel=${(event: PointerEvent) => this.cancelPress(i, event)}
-      @pointerleave=${(event: PointerEvent) => this.cancelPress(i, event)}
-      @click=${(event: MouseEvent) => this.handleClick(i, event)}
-      @contextmenu=${(event: Event) => { if (hasChannelAction(this.config?.channels[i], "hold")) event.preventDefault(); }}><div class="channel">${channel?.icon?html`<img src=${channel.icon}>`:nothing}<strong>${item.name?.trim()||channel?.name||item.channel_id}</strong></div><div class="show"><b>Ora</b><span>${p?.current?.title??"Programmazione non disponibile"}</span>${p?.current?html`<small>${new Date(p.current.start).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}–${new Date(p.current.stop).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</small>`:nothing}</div><div class="next"><b>Dopo</b><span>${p?.next?.title??"—"}</span></div></button>`})}</div></ha-card>`}
-  static styles=css`:host{display:block}ha-card{padding:16px}h2{margin:0 0 12px}.warning{color:var(--error-color);margin:8px 0}.grid{display:grid;gap:10px}button{font:inherit;color:var(--primary-text-color);background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:12px;padding:12px;text-align:left;display:grid;grid-template-columns:minmax(110px,.7fr) 1.4fr 1fr;gap:16px;cursor:pointer;touch-action:manipulation;user-select:none}.channel,.show,.next{display:flex;align-items:center;gap:8px;min-width:0}.show,.next{align-items:flex-start;flex-direction:column}.show span,.next span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}img{width:42px;height:42px;object-fit:contain}small{color:var(--secondary-text-color)}@media(max-width:600px){button{grid-template-columns:1fr}.next{border-top:1px solid var(--divider-color);padding-top:8px}}`;
+  private time(value: string | undefined): string {
+    if (!value) return "—";
+    const date = new Date(value);
+    return Number.isFinite(date.getTime())
+      ? date.toLocaleTimeString(this.hass?.locale?.language, { hour: "2-digit", minute: "2-digit", hour12: false }) : "—";
+  }
+
+  private progress(programme: Programme | null | undefined): number | undefined {
+    if (!programme) return undefined;
+    const start = Date.parse(programme.start);
+    const stop = Date.parse(programme.stop);
+    if (!Number.isFinite(start) || !Number.isFinite(stop) || stop <= start) return undefined;
+    return Math.max(0, Math.min(100, ((this.now - start) / (stop - start)) * 100));
+  }
+
+  render() {
+    if (!this.config) return nothing;
+    return html`<ha-card>
+      ${this.config.title?.trim() ? html`<h2>${this.config.title}</h2>` : nothing}
+      ${this.sourceRequired ? html`<p class="warning">Seleziona una sorgente EPG nell’editor della card.</p>` : nothing}
+      <div class="channels">${this.config.channels.map((item, index) => {
+        const channel = this.channels.find(c => c.id === item.channel_id);
+        const name = item.name?.trim() || channel?.name || item.channel_id;
+        const programmes = this.programmes[item.channel_id];
+        const current = programmes?.current;
+        const next = programmes?.next;
+        const progress = this.progress(current);
+        const icon = channel?.icon && !this.failedIcons.has(channel.icon) ? channel.icon : undefined;
+        const nextTime = this.time(next?.start);
+        const description = `${name}. ${current?.title ? `Ora: ${current.title}.` : "Programmazione non disponibile."}${progress !== undefined ? ` Avanzamento ${Math.round(progress)}%.` : ""}${next ? ` Alle ${nextTime}: ${next.title}.` : ""}`;
+        return html`<button type="button" class="channel-row" aria-label=${description} title=${description}
+          @pointerdown=${(event: PointerEvent) => this.down(index, event)}
+          @pointerup=${(event: PointerEvent) => this.up(index, event)}
+          @pointermove=${(event: PointerEvent) => this.move(index, event)}
+          @pointercancel=${(event: PointerEvent) => this.cancelPress(index, event)}
+          @pointerleave=${(event: PointerEvent) => this.cancelPress(index, event)}
+          @click=${(event: MouseEvent) => this.handleClick(index, event)}
+          @contextmenu=${(event: Event) => { if (hasChannelAction(item, "hold")) event.preventDefault(); }}>
+          <span class="channel-logo">
+            ${icon ? html`<img src=${icon} alt=${name} loading="lazy" decoding="async"
+              @error=${() => { this.failedIcons = new Set([...this.failedIcons, icon]); }}>`
+              : html`<span class="logo-fallback">${name}</span>`}
+          </span>
+          <span class="programme">
+            ${this.config?.show_channel_names ? html`<span class="channel-name">${name}</span>` : nothing}
+            <span class="current-title">${current?.title || "Programmazione non disponibile"}</span>
+            <span class="progress-track" aria-hidden="true">
+              ${progress !== undefined ? html`<span class="progress-fill" style=${`width:${progress}%`}></span>` : nothing}
+            </span>
+            <span class="next-programme">
+              ${next ? html`<time datetime=${next.start}>${nextTime}</time><span class="next-title">${next.title}</span>`
+                : html`<span class="next-title unavailable">Prossimo programma non disponibile</span>`}
+            </span>
+            ${progress !== undefined ? html`<span class="sr-only">Programma completato al ${Math.round(progress)}%.</span>` : nothing}
+          </span>
+        </button>`;
+      })}</div>
+    </ha-card>`;
+  }
+
+  static styles = css`
+    :host { display: block; --tv-accent: var(--primary-color, #03a9f4); }
+    ha-card { overflow: hidden; padding: 4px 0; }
+    h2 { margin: 0; padding: 12px 14px 8px; font-size: 15px; font-weight: 600; line-height: 1.3; letter-spacing: -.2px; }
+    .warning { margin: 10px 14px; color: var(--error-color); font-size: 13px; }
+    .channels { display: grid; }
+    .channel-row {
+      box-sizing: border-box; width: 100%; min-width: 0; min-height: 58px;
+      display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: 12px;
+      margin: 0; padding: 8px 14px; border: 0; border-radius: 0;
+      background: transparent; color: var(--primary-text-color); font: inherit; text-align: start;
+      cursor: pointer; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent;
+      transition: background-color 120ms ease;
+    }
+    .channel-row + .channel-row { border-top: 1px solid color-mix(in srgb, var(--divider-color, #888) 45%, transparent); }
+    @media (hover: hover) { .channel-row:hover { background: color-mix(in srgb, var(--tv-accent) 5%, transparent); } }
+    .channel-row:active { background: color-mix(in srgb, var(--tv-accent) 10%, transparent); }
+    .channel-row:focus-visible { outline: 2px solid var(--tv-accent); outline-offset: -2px; border-radius: 4px; }
+    .channel-logo { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; }
+    img { display: block; width: 100%; height: 100%; object-fit: contain; }
+    .logo-fallback { max-width: 100%; font-size: 10px; font-weight: 600; line-height: 1.15; text-align: center; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+    .programme { display: block; min-width: 0; }
+    .current-title, .channel-name, .next-title { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .current-title { font-size: 13px; line-height: 17px; font-weight: 550; letter-spacing: -.1px; }
+    .channel-name { margin-bottom: 2px; color: var(--secondary-text-color); font-size: 10px; line-height: 12px; }
+    .progress-track { display: block; height: 2px; margin: 4px 0 4px; overflow: hidden; border-radius: 4px; background: color-mix(in srgb, var(--primary-text-color) 9%, transparent); }
+    .progress-fill { display: block; height: 100%; border-radius: inherit; background: var(--tv-accent); transition: width 1s linear; }
+    .next-programme { display: flex; align-items: baseline; gap: 7px; min-width: 0; color: var(--secondary-text-color); font-size: 11px; line-height: 14px; }
+    time { flex: 0 0 auto; color: var(--tv-accent); font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .next-title { flex: 1; }
+    .unavailable { opacity: .7; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+    @media (prefers-reduced-motion: reduce) { .channel-row, .progress-fill { transition: none; } }
+  `;
   static getConfigElement(){return document.createElement("advanced-tv-remote-card-editor")}
   static getStubConfig(){return {type:"custom:advanced-tv-remote-card",channels:[]}}
 }
@@ -220,7 +308,7 @@ export class AdvancedTvRemoteCardEditor extends LitElement {
 
   private label = (schema: { name: string }) => ({
     title: "Titolo", config_entry_id: "Sorgente EPG", channel_id: "Canale",
-    name: "Nome personalizzato", tap_action: "Tocco",
+    show_channel_names: "Mostra nomi dei canali", name: "Nome personalizzato", tap_action: "Tocco",
     hold_action: "Pressione prolungata", double_tap_action: "Doppio tocco",
   }[schema.name] ?? schema.name);
 
@@ -254,6 +342,7 @@ export class AdvancedTvRemoteCardEditor extends LitElement {
       <ha-form .hass=${this.hass} .data=${this.config}
         .schema=${[
           { name: "title", selector: { text: {} } },
+          { name: "show_channel_names", selector: { boolean: {} } },
           { name: "config_entry_id", required: true, selector: { select: {
             mode: "dropdown", options: this.sources.map(source => ({ value: source.entry_id, label: source.title })),
           } } },

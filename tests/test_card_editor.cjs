@@ -79,7 +79,7 @@ process.chdir(path.resolve(__dirname, '..'));
     if(!formState)throw Error('Expanded state moved to wrong channel');
     if(process.env.EDITOR_SCREENSHOTS)await page.screenshot({path:path.join(process.env.EDITOR_SCREENSHOTS,'native-editor-expanded.png')});
     await page.evaluate(()=>{testEditor.setConfig({...savedConfigs.at(-1),channels:[{channel_id:'channel20',name:'TV Salotto'}]});const card=document.createElement('advanced-tv-remote-card');card.setConfig({...savedConfigs.at(-1),channels:[{channel_id:'channel20',name:'TV Salotto'}]});window.testCard=card;document.body.append(card);});
-    await page.waitForFunction(()=>testCard.shadowRoot.querySelector('strong')?.textContent==='TV Salotto');
+    await page.waitForFunction(()=>testCard.shadowRoot.querySelector('.logo-fallback')?.textContent==='TV Salotto');
     console.log('PASS: native HA menu with 500 non-overlapping rows, selection, actions, custom names, empty-name fallback, independent collapse, add/remove and card title');
   } finally {await browser.close();}
   process.exit(0);

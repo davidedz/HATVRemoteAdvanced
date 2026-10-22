@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+- Ridisegnata la card con righe compatte di circa 58 px, logo a sinistra e nessun riquadro interno.
+- Programma corrente con barra di avanzamento aggiornata ogni 15 secondi; programma successivo con orario di inizio.
+- Nomi dei canali nascosti per impostazione predefinita e attivabili dall’editor; nome sempre disponibile per accessibilità e come alternativa a loghi mancanti o non caricabili.
+- Titolo della card facoltativo: viene mostrato solo se configurato.
+- Layout compatto anche su mobile, titoli lunghi troncati, colori del tema HA e rispetto delle preferenze di movimento ridotto.
+- Verificati avanzamento, orari mancanti/non validi, temi chiaro/scuro, larghezze da 280 px e mantenimento di azioni ed editor.
+
+
 ## 0.2.3
 
 - Corretto il supporto delle azioni moderne `perform-action`: `perform_action`, `data` e `target` vengono inoltrati correttamente a Home Assistant senza modificare la configurazione salvata.
