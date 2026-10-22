@@ -3,11 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from homeassistant.components.http import StaticPathConfig
+from homeassistant.components.lovelace.const import LOVELACE_DATA
 from homeassistant.const import CONF_URL
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import CONF_CACHE_HOURS, CONF_UPDATE_INTERVAL, DEFAULT_CACHE_HOURS, DEFAULT_UPDATE_INTERVAL, DOMAIN
 from .coordinator import EpgCoordinator
+from .frontend import async_register_card
 from .provider import XmlTvProvider
 from .websocket import async_register
 
@@ -17,6 +19,9 @@ async def async_setup(hass, config):
     await hass.http.async_register_static_paths(
         [StaticPathConfig("/advanced_tv_remote", str(Path(__file__).parent / "www"), False)]
     )
+    lovelace = hass.data[LOVELACE_DATA]
+    resources = lovelace["resources"] if isinstance(lovelace, dict) else lovelace.resources
+    await async_register_card(hass, resources)
     async_register(hass)
     return True
 

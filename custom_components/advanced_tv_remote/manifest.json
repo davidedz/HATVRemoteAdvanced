@@ -1,11 +1,16 @@
 {
   "domain": "advanced_tv_remote",
   "name": "Advanced TV Remote",
-  "codeowners": ["@Davide-D"],
+  "codeowners": [
+    "@Davide-D"
+  ],
   "config_flow": true,
-  "documentation": "https://github.com/Davide-D/advanced-tv-remote",
+  "documentation": "https://github.com/davidedz/HATVRemoteAdvanced",
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "requirements": [],
-  "version": "0.2.0"
+  "version": "0.2.1",
+  "dependencies": [
+    "lovelace"
+  ]
 }
