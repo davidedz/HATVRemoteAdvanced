@@ -38,9 +38,13 @@ channels:
 
 L'editor permette di scegliere la sorgente EPG configurata senza cercare manualmente il `config_entry_id`. Quando esiste una sola sorgente viene selezionata automaticamente. Usa `ha-form` e i selettori nativi di Home Assistant per canali e azioni, caricando i componenti corretti per la versione installata. Ogni canale è racchiuso in un pannello richiudibile: cliccare sull’intestazione per aprirlo o chiuderlo. Il campo **Nome personalizzato** modifica il nome mostrato nella card e nell’intestazione; lasciandolo vuoto si usa il nome fornito dalla guida TV. I canali esistenti sono inizialmente chiusi, mentre un nuovo canale si apre subito per la configurazione.
 
+Sono supportate le azioni moderne `perform-action` con `perform_action`, `data` e `target`, oltre alle azioni precedenti `call-service`. Un tocco viene eseguito subito, salvo quando è configurata un’azione di doppio tocco: in quel caso la card attende brevemente per distinguere i due gesti. Se Home Assistant restituisce un errore nell’esecuzione del comando, viene mostrata una notifica.
+
 ## Sviluppo
 
 Da `frontend`: `npm install`, `npm run typecheck`, `npm run build`. Il backend richiede Python 3.12 e le dipendenze dell'ambiente di sviluppo Home Assistant.
+
+Il test delle azioni `node tests/test_card_actions.cjs` usa chiamate HA simulate e non comanda dispositivi reali. Richiede Playwright e un browser Chromium installati.
 
 Il test UI `node tests/test_card_editor.cjs` richiede Playwright e un browser Chromium installati. Usa i componenti reali della demo ufficiale di Home Assistant, quindi richiede accesso a Internet; non usa credenziali o un’installazione HA personale. Per usare Microsoft Edge impostare `PLAYWRIGHT_CHANNEL=msedge`.
 

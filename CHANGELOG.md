@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.3
+
+- Corretto il supporto delle azioni moderne `perform-action`: `perform_action`, `data` e `target` vengono inoltrati correttamente a Home Assistant senza modificare la configurazione salvata.
+- Mantenuta la compatibilità con `call-service` e `service_data`, incluse le conferme delle azioni.
+- I tocchi semplici sono immediati quando non è configurato un doppio tocco; i tocchi rapidi su canali diversi non si annullano più.
+- Corretta la distinzione tra tocco, doppio tocco e pressione prolungata, con annullamento durante lo scorrimento e pulizia dei timer alla chiusura della card.
+- Aggiunto supporto per attivazione da tastiera e notifica degli errori restituiti da Home Assistant.
+- Aggiunti test browser per comandi, dati e destinazione, gesti mouse/touch/tastiera, conferme e gestione degli errori, senza comandare dispositivi reali.
+
+
 ## 0.2.2
 
 - Ripristinati i selettori nativi di Home Assistant tramite ha-form: Home Assistant carica i componenti corretti del menu, senza elementi mwc-list-item incompatibili.
