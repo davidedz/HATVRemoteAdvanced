@@ -5,7 +5,7 @@ Integrazione custom Home Assistant e Lovelace card installabile tramite HACS. Mo
 ## Installazione
 
 1. Aggiungere il repository come repository personalizzato HACS di tipo **Integration**, oppure copiare `custom_components/advanced_tv_remote` in `config/custom_components/`.
-2. Aggiungere `/advanced_tv_remote/advanced-tv-remote-card.js` come risorsa JavaScript di tipo modulo nella dashboard. Il bundle viene servito direttamente dall'integrazione.
+2. Aggiungere `/advanced_tv_remote/advanced-tv-remote-card.js?v=0.2.0` come risorsa JavaScript di tipo modulo nella dashboard. Il bundle viene servito direttamente dall'integrazione.
 3. Riavviare Home Assistant e aggiungere **Advanced TV Remote** da Impostazioni → Dispositivi e servizi.
 4. Inserire un URL XMLTV pubblico o privato, `.xml` o `.gz`.
 5. Aggiungere la card dall'editor visuale Lovelace.
@@ -15,7 +15,8 @@ Integrazione custom Home Assistant e Lovelace card installabile tramite HACS. Mo
 ```yaml
 type: custom:advanced-tv-remote-card
 title: Guida TV
-config_entry_id: ID_DELLA_CONFIG_ENTRY
+# Facoltativo quando è configurata una sola sorgente EPG.
+config_entry_id: 01ABCDEF...
 channels:
   - channel_id: rai1.it
     name: Rai 1
@@ -35,7 +36,7 @@ channels:
       entity: switch.tv
 ```
 
-L'editor usa `hui-action-editor`, il componente nativo di Home Assistant, e quindi espone le azioni supportate dalla versione installata.
+L'editor permette di scegliere la sorgente EPG configurata senza cercare manualmente il `config_entry_id`. Quando esiste una sola sorgente viene selezionata automaticamente. Usa inoltre `hui-action-editor`, il componente nativo di Home Assistant, e quindi espone le azioni supportate dalla versione installata.
 
 ## Sviluppo
 
@@ -43,4 +44,4 @@ Da `frontend`: `npm install`, `npm run typecheck`, `npm run build`. Il backend r
 
 ## Dati, licenze e limiti
 
-L'integrazione contatta solo l'URL XMLTV configurato. Non include né redistribuisce un feed proprietario: disponibilità, correttezza e licenza dei palinsesti dipendono dal provider scelto. La prima versione richiede il `config_entry_id` nella configurazione della card.
+L'integrazione contatta solo l'URL XMLTV configurato. Non include né redistribuisce un feed proprietario: disponibilità, correttezza e licenza dei palinsesti dipendono dal provider scelto.

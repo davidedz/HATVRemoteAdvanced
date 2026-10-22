@@ -6,4 +6,4 @@ DEFAULT_UPDATE_INTERVAL = 360
 DEFAULT_CACHE_HOURS = 24
 WS_CHANNELS = "advanced_tv_remote/channels"
 WS_PROGRAMS = "advanced_tv_remote/programs"
-
+WS_SOURCES = "advanced_tv_remote/sources"
